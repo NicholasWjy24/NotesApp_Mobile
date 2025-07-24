@@ -1,8 +1,10 @@
-import 'package:nnotes/screen/note/note_data.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:localstore/localstore.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:nnotes/widget/quill_tool_bar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:localstore/localstore.dart';
+import 'package:nnotes/screen/note/note_data.dart';
 
 class NoteScreen extends StatefulWidget {
   final NoteData? note;
@@ -17,29 +19,53 @@ class _NoteScreenState extends State<NoteScreen> {
   final _noteData = <String, NoteData>{};
 
   final noteTitleTextFieldController = TextEditingController();
-  final contentsNoteController = TextEditingController();
+  late QuillController _quillController;
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+
   int? noteID;
   Timer? _debounce;
+  StreamSubscription? _quillSubscription;
 
   @override
   void dispose() {
-    noteTitleTextFieldController.removeListener(_autoSave);
-    contentsNoteController.removeListener(_autoSave);
     noteTitleTextFieldController.dispose();
-    contentsNoteController.dispose();
+    _quillController.dispose();
+    _quillSubscription?.cancel();
+    _focusNode.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
   @override
   void initState() {
+    super.initState();
+
+    // Initialize Quill controller with existing content or empty document
+    Document document;
+    try {
+      if (widget.note != null && widget.note!.content.isNotEmpty) {
+        document = Document.fromJson(jsonDecode(widget.note!.content));
+      } else {
+        document = Document();
+      }
+    } catch (e) {
+      // If content parsing fails, start with empty document
+      document = Document();
+    }
+
+    _quillController = QuillController(
+      document: document,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
     if (widget.note != null) {
       noteTitleTextFieldController.text = widget.note!.title;
-      contentsNoteController.text = widget.note!.content;
     }
-    if (kIsWeb) _db.collection('NoteData').stream.asBroadcastStream();
+
+    // Listen to changes for auto-save
     noteTitleTextFieldController.addListener(_autoSave);
-    contentsNoteController.addListener(_autoSave);
-    super.initState();
+    _quillController.addListener(_autoSave);
   }
 
   void _autoSave() {
@@ -47,21 +73,19 @@ class _NoteScreenState extends State<NoteScreen> {
 
     _debounce = Timer(const Duration(seconds: 1), () {
       final title = noteTitleTextFieldController.text.trim();
-      final content = contentsNoteController.text.trim();
 
-      if (title.isEmpty || content.isEmpty) {
+      if (title.isEmpty) {
         return;
       }
 
       final note = NoteData(
         id: widget.note?.id ?? _db.collection('NoteData').doc().id,
         title: title,
-        content: content,
+        content: jsonEncode(_quillController.document.toDelta().toJson()),
         time: DateTime.now(),
         done: false,
       );
       note.save();
-      print("Autosaved");
     });
   }
 
@@ -84,8 +108,7 @@ class _NoteScreenState extends State<NoteScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              if (contentsNoteController.text.trim().isEmpty ||
-                  noteTitleTextFieldController.text.trim().isEmpty) {
+              if (noteTitleTextFieldController.text.trim().isEmpty) {
                 showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => Dialog(
@@ -128,7 +151,8 @@ class _NoteScreenState extends State<NoteScreen> {
                 final item = NoteData(
                   id: id,
                   title: noteTitleTextFieldController.text,
-                  content: contentsNoteController.text,
+                  content:
+                      jsonEncode(_quillController.document.toDelta().toJson()),
                   time: now,
                   done: false,
                 );
@@ -149,18 +173,44 @@ class _NoteScreenState extends State<NoteScreen> {
       ),
       body: SafeArea(
         child: Container(
-          height: MediaQuery.of(context).size.height,
           padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: contentsNoteController,
-            maxLines: 100,
-            autocorrect: false,
-            enableSuggestions: false,
-            textCapitalization: TextCapitalization.none,
-            keyboardType: TextInputType.multiline,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(borderSide: BorderSide.none),
-            ),
+          height: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      isScrollControlled: true, // penting jika isi card tinggi
+                      builder: (context) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            height:
+                                400, // atau pakai `Wrap` jika ingin fleksibel
+                            child: Column(
+                              children: [
+                                quillToolBar(quillController: _quillController),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.filter_alt)),
+              Expanded(
+                  child: QuillEditor(
+                      configurations: QuillEditorConfigurations(
+                          controller: _quillController),
+                      focusNode: _focusNode,
+                      scrollController: _scrollController))
+            ],
           ),
         ),
       ),

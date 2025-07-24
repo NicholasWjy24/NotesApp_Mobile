@@ -37,7 +37,10 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   localstore: ^1.4.0
-  intl: ^0.18.1
+  intl: ^0.19.0
+  flutter_quill: ^9.3.1
+  # flutter_quill: ^11.0.1
+  # flutter_quill_extensions: ^11.0.0
 
 dev_dependencies:
   flutter_test:
