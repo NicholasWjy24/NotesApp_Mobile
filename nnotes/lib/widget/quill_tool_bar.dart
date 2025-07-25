@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
-
-class quillToolBar extends StatelessWidget {
-  const quillToolBar({
+class QuillToolBar extends StatelessWidget {
+  const QuillToolBar({
     super.key,
     required QuillController quillController,
   }) : _quillController = quillController;
@@ -14,11 +13,9 @@ class quillToolBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        //show toolbar for the first column
         QuillSimpleToolbar(
           configurations: QuillSimpleToolbarConfigurations(
             controller: _quillController,
-            // Icon will Appear
             showBoldButton: true,
             showItalicButton: true,
             showStrikeThrough: true,
@@ -30,8 +27,8 @@ class quillToolBar extends StatelessWidget {
             showColorButton: true,
             showBackgroundColorButton: true,
             showUnderLineButton: true,
+            multiRowsDisplay: true,
 
-            // Icon Will Desapear
             showInlineCode: false,
             showLineHeightButton: false,
             showAlignmentButtons: false,
@@ -50,7 +47,6 @@ class quillToolBar extends StatelessWidget {
             showClipboardCut: false,
             showClipboardCopy: false,
             showClipboardPaste: false,
-            multiRowsDisplay: false,
             showCenterAlignment: false,
             showDividers: false,
             showJustifyAlignment: false,
@@ -59,8 +55,6 @@ class quillToolBar extends StatelessWidget {
             showSmallButton: false,
           ),
         ),
-
-        // 🅱️ Paragraph Style
         QuillSimpleToolbar(
           configurations: QuillSimpleToolbarConfigurations(
               controller: _quillController,
@@ -72,8 +66,8 @@ class quillToolBar extends StatelessWidget {
               showListCheck: true,
               showLineHeightButton: true,
               showIndent: true,
+              multiRowsDisplay: true,
 
-              // Others false
               showBoldButton: false,
               showItalicButton: false,
               showStrikeThrough: false,
@@ -94,7 +88,6 @@ class quillToolBar extends StatelessWidget {
               showClipboardCut: false,
               showClipboardCopy: false,
               showClipboardPaste: false,
-              multiRowsDisplay: false,
               showCenterAlignment: false,
               showJustifyAlignment: false,
               showDividers: false,
@@ -103,15 +96,13 @@ class quillToolBar extends StatelessWidget {
               showSmallButton: false,
               showUnderLineButton: false),
         ),
-
-        // 🔤 Alignment
         QuillSimpleToolbar(
           configurations: QuillSimpleToolbarConfigurations(
             controller: _quillController,
             showAlignmentButtons: true,
             showDirection: true,
+            multiRowsDisplay: true,
 
-            // Others false
             showUnderLineButton: false,
             showDividers: false,
             showBoldButton: false,
@@ -140,11 +131,8 @@ class quillToolBar extends StatelessWidget {
             showClipboardCut: false,
             showClipboardCopy: false,
             showClipboardPaste: false,
-            multiRowsDisplay: false,
           ),
         ),
-
-        // 🔗 Link & Clipboard
         QuillSimpleToolbar(
           configurations: QuillSimpleToolbarConfigurations(
             controller: _quillController,
@@ -155,8 +143,8 @@ class quillToolBar extends StatelessWidget {
             showUndo: true,
             showRedo: true,
             showSearchButton: true,
+            multiRowsDisplay: true,
 
-            // Others false
             showDividers: false,
             showUnderLineButton: false,
             showBoldButton: false,
@@ -180,7 +168,6 @@ class quillToolBar extends StatelessWidget {
             showIndent: false,
             showAlignmentButtons: false,
             showDirection: false,
-            multiRowsDisplay: false,
           ),
         ),
       ],

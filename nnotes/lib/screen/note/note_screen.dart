@@ -210,9 +210,18 @@ class _NoteScreenState extends State<NoteScreen> {
           padding: const EdgeInsets.all(12),
           height: double.infinity,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              IconButton(
+              Expanded(
+                child: QuillEditor(
+                  configurations:
+                      QuillEditorConfigurations(controller: _quillController),
+                  focusNode: _focusNode,
+                  scrollController: _scrollController,
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: IconButton(
                   onPressed: () {
                     showModalBottomSheet(
                       context: context,
@@ -220,16 +229,15 @@ class _NoteScreenState extends State<NoteScreen> {
                         borderRadius:
                             BorderRadius.vertical(top: Radius.circular(20)),
                       ),
-                      isScrollControlled: true, // penting jika isi card tinggi
+                      isScrollControlled: true,
                       builder: (context) {
                         return Padding(
                           padding: const EdgeInsets.all(16),
                           child: SizedBox(
-                            height:
-                                400, // atau pakai `Wrap` jika ingin fleksibel
+                            height: 400,
                             child: Column(
                               children: [
-                                quillToolBar(quillController: _quillController),
+                                QuillToolBar(quillController: _quillController),
                               ],
                             ),
                           ),
@@ -237,17 +245,56 @@ class _NoteScreenState extends State<NoteScreen> {
                       },
                     );
                   },
-                  icon: const Icon(Icons.filter_alt)),
-              Expanded(
-                  child: QuillEditor(
-                      configurations: QuillEditorConfigurations(
-                          controller: _quillController),
-                      focusNode: _focusNode,
-                      scrollController: _scrollController))
+                  icon: const Icon(Icons.more_horiz),
+                ),
+              ),
+              quillSimpleToolBar(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  QuillSimpleToolbar quillSimpleToolBar() {
+    return QuillSimpleToolbar(
+              configurations: QuillSimpleToolbarConfigurations(
+                controller: _quillController,
+                showUndo: true,
+                showRedo: true,
+                multiRowsDisplay: true,
+                showListNumbers: true,
+                showListBullets: true,
+                showUnderLineButton: true,
+                showBoldButton: true,
+                showItalicButton: true,
+                
+
+                // Others false
+                showDividers: false,
+                showSearchButton: false,
+                showLink: false,
+                showClipboardCut: false,
+                showClipboardCopy: false,
+                showClipboardPaste: false,
+                showStrikeThrough: false,
+                showInlineCode: false,
+                showClearFormat: false,
+                showSubscript: false,
+                showSuperscript: false,
+                showFontFamily: false,
+                showFontSize: false,
+                showColorButton: false,
+                showBackgroundColorButton: false,
+                showHeaderStyle: false,
+                showQuote: false,
+                showCodeBlock: false,
+                showListCheck: false,
+                showLineHeightButton: false,
+                showIndent: false,
+                showAlignmentButtons: false,
+                showDirection: false,
+              ),
+            );
   }
 }
