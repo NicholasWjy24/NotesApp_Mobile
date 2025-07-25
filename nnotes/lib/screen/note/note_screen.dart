@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:nnotes/widget/quill_tool_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -18,7 +19,7 @@ class _NoteScreenState extends State<NoteScreen> {
   final _db = Localstore.instance;
   final _noteData = <String, NoteData>{};
 
-  final noteTitleTextFieldController = TextEditingController();
+  final _noteTitleTextFieldController = TextEditingController();
   late QuillController _quillController;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
@@ -29,11 +30,13 @@ class _NoteScreenState extends State<NoteScreen> {
 
   @override
   void dispose() {
-    noteTitleTextFieldController.dispose();
-    _quillController.dispose();
+    _noteTitleTextFieldController.removeListener(_autoSave);
+    _quillController.removeListener(_autoSave);
     _quillSubscription?.cancel();
-    _focusNode.dispose();
     _debounce?.cancel();
+    _noteTitleTextFieldController.dispose();
+    _quillController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -43,14 +46,15 @@ class _NoteScreenState extends State<NoteScreen> {
 
     // Initialize Quill controller with existing content or empty document
     Document document;
-    try {
-      if (widget.note != null && widget.note!.content.isNotEmpty) {
-        document = Document.fromJson(jsonDecode(widget.note!.content));
-      } else {
+    if (widget.note != null && widget.note!.contentJson.isNotEmpty) {
+      final delta = Delta.fromJson(jsonDecode(widget.note!.contentJson));
+      final plainText = Document.fromDelta(delta).toPlainText().trim();
+      if (plainText.isEmpty) {
         document = Document();
+      } else {
+        document = Document.fromDelta(delta);
       }
-    } catch (e) {
-      // If content parsing fails, start with empty document
+    } else {
       document = Document();
     }
 
@@ -60,28 +64,44 @@ class _NoteScreenState extends State<NoteScreen> {
     );
 
     if (widget.note != null) {
-      noteTitleTextFieldController.text = widget.note!.title;
+      _noteTitleTextFieldController.text = widget.note!.title;
     }
 
     // Listen to changes for auto-save
-    noteTitleTextFieldController.addListener(_autoSave);
+    _noteTitleTextFieldController.addListener(_autoSave);
     _quillController.addListener(_autoSave);
+  }
+
+  bool isDeltaEmpty(Delta delta) {
+    final text = delta
+        .toList()
+        .where((op) => op.key == 'insert')
+        .map((op) => op.value)
+        .whereType<String>()
+        .join();
+
+    return text.trim().isEmpty;
   }
 
   void _autoSave() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
     _debounce = Timer(const Duration(seconds: 1), () {
-      final title = noteTitleTextFieldController.text.trim();
+      final title = _noteTitleTextFieldController.text.trim();
+      final delta = _quillController.document.toDelta();
+      final plainText = _quillController.document.toPlainText().trim();
 
-      if (title.isEmpty) {
+      final isContentEmpty = isDeltaEmpty(delta);
+
+      if ((title.isEmpty && isContentEmpty) || widget.note?.id == null) {
         return;
       }
 
       final note = NoteData(
-        id: widget.note?.id ?? _db.collection('NoteData').doc().id,
+        id: widget.note!.id,
         title: title,
-        content: jsonEncode(_quillController.document.toDelta().toJson()),
+        contentJson: jsonEncode(delta.toJson()),
+        plainTextContent: plainText,
         time: DateTime.now(),
         done: false,
       );
@@ -94,7 +114,7 @@ class _NoteScreenState extends State<NoteScreen> {
     return Scaffold(
       appBar: AppBar(
         title: TextField(
-          controller: noteTitleTextFieldController,
+          controller: _noteTitleTextFieldController,
           maxLength: 18,
           autocorrect: false,
           textCapitalization: TextCapitalization.none,
@@ -108,7 +128,11 @@ class _NoteScreenState extends State<NoteScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              if (noteTitleTextFieldController.text.trim().isEmpty) {
+              final title = _noteTitleTextFieldController.text.trim();
+              final delta = _quillController.document.toDelta();
+              final plainText = Document.fromDelta(delta).toPlainText().trim();
+
+              if (title.isEmpty || plainText.isEmpty) {
                 showDialog<String>(
                   context: context,
                   builder: (BuildContext context) => Dialog(
@@ -127,39 +151,49 @@ class _NoteScreenState extends State<NoteScreen> {
                           const SizedBox(height: 16),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.onSecondary),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.onSecondary,
+                            ),
                             onPressed: () {
                               Navigator.pop(context);
                             },
                             child: Text(
                               'I Understand',
                               style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary),
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
                   ),
                 );
+                return; // <-- Penting: agar proses tidak lanjut ke save
               } else {
                 final id =
                     widget.note?.id ?? _db.collection('NoteData').doc().id;
                 final now = DateTime.now();
+                final delta = _quillController.document.toDelta();
+                final plainText =
+                    _quillController.document.toPlainText().trim();
+                final title = _noteTitleTextFieldController.text.trim();
+
                 final item = NoteData(
                   id: id,
-                  title: noteTitleTextFieldController.text,
-                  content:
-                      jsonEncode(_quillController.document.toDelta().toJson()),
+                  title: title,
+                  contentJson: jsonEncode(delta.toJson()),
+                  plainTextContent: plainText,
                   time: now,
                   done: false,
                 );
+
                 await item.save();
+
                 setState(() {
                   _noteData[item.id] = item;
                 });
+
                 Navigator.pop(context);
               }
             },

@@ -3,14 +3,16 @@ import 'package:localstore/localstore.dart';
 class NoteData {
   final String id;
   final String title;
-  final String content;
+  final String contentJson; // Delta styled
+  final String plainTextContent; // Hanya teks
   final DateTime time;
   final bool done;
 
   NoteData({
     required this.id,
     required this.title,
-    required this.content,
+    required this.contentJson,
+    required this.plainTextContent,
     required this.time,
     required this.done,
   });
@@ -19,7 +21,8 @@ class NoteData {
     return {
       'id': id,
       'title': title,
-      'content': content,
+      'contentJson': contentJson,
+      'plainTextContent': plainTextContent,
       'time': time.toIso8601String(),
       'done': done,
     };
@@ -29,7 +32,8 @@ class NoteData {
     return NoteData(
       id: map['id'],
       title: map['title'],
-      content: map['content'],
+      contentJson: map['contentJson'],
+      plainTextContent: map['plainTextContent'],
       time: DateTime.parse(map['time']),
       done: map['done'],
     );

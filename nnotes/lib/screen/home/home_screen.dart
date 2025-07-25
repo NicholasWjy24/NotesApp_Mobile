@@ -119,12 +119,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      item.content.length > 80
-                          ? '${item.content.substring(0, 80)}...'
-                          : item.content,
+                      item.plainTextContent.length > 80
+                          ? '${item.plainTextContent.substring(0, 80)}...'
+                          : item.plainTextContent,
                       style: const TextStyle(color: Colors.black54),
                     ),
-                    const SizedBox(height:20),
+                    const SizedBox(height: 20),
                     Text(
                       'Last Update:\n${DateFormat('dd-MM-yyyy').format(item.time)} - ${DateFormat('HH:mm').format(item.time)}',
                       textAlign: TextAlign.left,
