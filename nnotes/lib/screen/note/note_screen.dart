@@ -5,7 +5,7 @@ import 'package:nnotes/widget/quill_tool_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:localstore/localstore.dart';
-import 'package:nnotes/screen/note/note_data.dart';
+import 'package:nnotes/data/note_data.dart';
 
 class NoteScreen extends StatefulWidget {
   final NoteData? note;
@@ -23,6 +23,7 @@ class _NoteScreenState extends State<NoteScreen> {
   late QuillController _quillController;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  bool _isReadOnly = true;
 
   int? noteID;
   Timer? _debounce;
@@ -43,8 +44,8 @@ class _NoteScreenState extends State<NoteScreen> {
   @override
   void initState() {
     super.initState();
+    _focusNode.unfocus();
 
-    // Initialize Quill controller with existing content or empty document
     Document document;
     if (widget.note != null && widget.note!.contentJson.isNotEmpty) {
       final delta = Delta.fromJson(jsonDecode(widget.note!.contentJson));
@@ -128,6 +129,7 @@ class _NoteScreenState extends State<NoteScreen> {
         actions: [
           TextButton(
             onPressed: () async {
+              _focusNode.unfocus();
               final title = _noteTitleTextFieldController.text.trim();
               final delta = _quillController.document.toDelta();
               final plainText = Document.fromDelta(delta).toPlainText().trim();
@@ -193,7 +195,7 @@ class _NoteScreenState extends State<NoteScreen> {
                 setState(() {
                   _noteData[item.id] = item;
                 });
-
+                _focusNode.unfocus();
                 Navigator.pop(context);
               }
             },
@@ -237,7 +239,11 @@ class _NoteScreenState extends State<NoteScreen> {
                             height: 400,
                             child: Column(
                               children: [
-                                QuillToolBar(quillController: _quillController),
+                                Focus(
+                                  canRequestFocus: false,
+                                  child: QuillToolBar(
+                                      quillController: _quillController),
+                                ),
                               ],
                             ),
                           ),
@@ -248,7 +254,10 @@ class _NoteScreenState extends State<NoteScreen> {
                   icon: const Icon(Icons.more_horiz),
                 ),
               ),
-              quillSimpleToolBar(),
+              Focus(
+                canRequestFocus: false,
+                child: quillSimpleToolBar(),
+              ),
             ],
           ),
         ),
@@ -258,43 +267,42 @@ class _NoteScreenState extends State<NoteScreen> {
 
   QuillSimpleToolbar quillSimpleToolBar() {
     return QuillSimpleToolbar(
-              configurations: QuillSimpleToolbarConfigurations(
-                controller: _quillController,
-                showUndo: true,
-                showRedo: true,
-                multiRowsDisplay: true,
-                showListNumbers: true,
-                showListBullets: true,
-                showUnderLineButton: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                
+      configurations: QuillSimpleToolbarConfigurations(
+        controller: _quillController,
+        showUndo: true,
+        showRedo: true,
+        multiRowsDisplay: true,
+        showListNumbers: true,
+        showListBullets: true,
+        showUnderLineButton: true,
+        showBoldButton: true,
+        showItalicButton: true,
 
-                // Others false
-                showDividers: false,
-                showSearchButton: false,
-                showLink: false,
-                showClipboardCut: false,
-                showClipboardCopy: false,
-                showClipboardPaste: false,
-                showStrikeThrough: false,
-                showInlineCode: false,
-                showClearFormat: false,
-                showSubscript: false,
-                showSuperscript: false,
-                showFontFamily: false,
-                showFontSize: false,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showHeaderStyle: false,
-                showQuote: false,
-                showCodeBlock: false,
-                showListCheck: false,
-                showLineHeightButton: false,
-                showIndent: false,
-                showAlignmentButtons: false,
-                showDirection: false,
-              ),
-            );
+        // Others false
+        showDividers: false,
+        showSearchButton: false,
+        showLink: false,
+        showClipboardCut: false,
+        showClipboardCopy: false,
+        showClipboardPaste: false,
+        showStrikeThrough: false,
+        showInlineCode: false,
+        showClearFormat: false,
+        showSubscript: false,
+        showSuperscript: false,
+        showFontFamily: false,
+        showFontSize: false,
+        showColorButton: false,
+        showBackgroundColorButton: false,
+        showHeaderStyle: false,
+        showQuote: false,
+        showCodeBlock: false,
+        showListCheck: false,
+        showLineHeightButton: false,
+        showIndent: false,
+        showAlignmentButtons: false,
+        showDirection: false,
+      ),
+    );
   }
 }
