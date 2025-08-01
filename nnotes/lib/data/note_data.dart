@@ -7,7 +7,7 @@ class NoteData {
   final String plainTextContent;
   final DateTime time;
   final bool done;
-  final String? folderId; // ✅ Bisa null
+  final String? folderId;
 
   NoteData({
     required this.id,

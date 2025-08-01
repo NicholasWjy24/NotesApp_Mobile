@@ -6,6 +6,7 @@ import 'package:nnotes/data/note_data.dart';
 import 'package:nnotes/screen/note/note_screen.dart';
 import 'package:localstore/localstore.dart';
 import 'package:nnotes/data/folder_data.dart';
+import 'package:nnotes/widget/folder_selection_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _noteData = <String, NoteData>{};
   List<String> folders = [];
   int folderCounter = 1;
+  String? _selectedFolderId;
   StreamSubscription<Map<String, dynamic>>? _subscription;
 
   @override
@@ -167,8 +169,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 final newFolder =
                     FolderData(folderId: id, name: newFolderName.trim());
                 await newFolder.save();
-                // Otomatis masuk ke _folders karena stream listener
               }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.note),
+            title: const Text("All Notes (No Folder)"),
+            onTap: () {
+              setState(() {
+                _selectedFolderId = null;
+                Navigator.pop(context);
+              });
             },
           ),
           const Divider(),
@@ -206,7 +217,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               onTap: () {
-                // Aksi saat folder diklik, misalnya filter catatan
+                setState(() {
+                  _selectedFolderId = folder
+                      .folderId; //memilih folder yang diinginkan sesuai dengan folder id
+                  Navigator.pop(context); // Close the drawer
+                });
               },
             );
           }).toList(),
@@ -227,12 +242,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget nNotescontains() {
-    if (_noteData.isNotEmpty) {
+    // Filter notes sesuai folder yang dipilih
+    final filteredNotes = _noteData.values
+        .where((note) => note.folderId == _selectedFolderId)
+        .toList();
+
+    if (filteredNotes.isNotEmpty) {
       return ListView.builder(
-        itemCount: _noteData.length,
+        itemCount: filteredNotes.length,
         itemBuilder: (context, index) {
-          final key = _noteData.keys.elementAt(index);
-          final item = _noteData[key]!;
+          final item = filteredNotes[index];
 
           return Padding(
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
@@ -242,6 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               elevation: 2,
               child: ListTile(
+                titleAlignment: ListTileTitleAlignment.top,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 title: Column(
@@ -272,15 +292,65 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete,
-                      color: Theme.of(context).colorScheme.onPrimary),
-                  onPressed: () {
-                    setState(() {
-                      item.delete();
-                      _noteData.remove(item.id);
-                    });
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      setState(() {
+                        item.delete();
+                        _noteData.remove(item.id);
+                      });
+                    } else if (value == 'edit') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => NoteScreen(note: item)),
+                      );
+                      setState(() {});
+                    } else if (value == 'add_to_folder') {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Select Folder'),
+                          content: SizedBox(
+                            width: 300,
+                            height: 400,
+                            child: FolderSelectionOverlay(
+                              folders: _folders.values.toList(),
+                              onFolderSelected: (folderId) async {
+                                final updatedNote = NoteData(
+                                  id: item.id,
+                                  title: item.title,
+                                  contentJson: item.contentJson,
+                                  plainTextContent: item.plainTextContent,
+                                  time: item.time,
+                                  done: item.done,
+                                  folderId: folderId,
+                                );
+                                await updatedNote.save();
+                                _noteData[item.id] = updatedNote;
+                                setState(() {});
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                   },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'add_to_folder',
+                      child: Text('Add to Folder'),
+                    ),
+                  ],
                 ),
                 onTap: () async {
                   await Navigator.push(
