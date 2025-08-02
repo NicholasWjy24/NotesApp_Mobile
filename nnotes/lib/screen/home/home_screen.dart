@@ -7,6 +7,7 @@ import 'package:nnotes/screen/note/note_screen.dart';
 import 'package:localstore/localstore.dart';
 import 'package:nnotes/data/folder_data.dart';
 import 'package:nnotes/widget/folder_selection_overlay.dart';
+import 'package:nnotes/widget/pop_up_add_button_home_screen_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _db = Localstore.instance;
   final Map<String, FolderData> _folders = {};
   final _noteData = <String, NoteData>{};
+  final GlobalKey _fabKey = GlobalKey(); //for Floating Add Button
   List<String> folders = [];
   int folderCounter = 1;
   String? _selectedFolderId;
@@ -64,44 +66,80 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
   }
 
-  Future<void> _addFolder() async {
-    final folderName = await _showAddFolderDialog();
-    if (folderName != null && folderName.trim().isNotEmpty) {
-      final id = _db.collection('FolderData').doc().id;
-      final newFolder = FolderData(folderId: id, name: folderName.trim());
-      await newFolder.save();
-    }
-  }
+  void _showFabPopup(BuildContext context, GlobalKey fabKey) {
+    final RenderBox button =
+        fabKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position =
+        button.localToGlobal(Offset.zero, ancestor: overlay);
 
-  Future<String?> _showAddFolderDialog() async {
-    String folderName = '';
+    late OverlayEntry overlayEntry;
+    final AnimationController controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: Navigator.of(context),
+    );
 
-    return showDialog<String>(
-      context: context,
+    final Animation<Offset> offsetAnimation = Tween<Offset>(
+      begin: const Offset(0.2, 1), // starts from bottom-right
+      end: Offset.zero, // ends at natural position
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    final Animation<double> fadeAnimation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeIn,
+    );
+
+    overlayEntry = OverlayEntry(
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Enter Folder Name'),
-          content: TextField(
-            autofocus: true,
-            decoration:
-                const InputDecoration(hintText: 'e.g., Kuliah, Pribadi'),
-            onChanged: (value) {
-              folderName = value;
-            },
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
+        return Stack(
+          children: [
+            // Dismiss area
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  controller.reverse().then((_) {
+                    overlayEntry.remove();
+                    controller.dispose();
+                  });
+                },
+                child: Container(color: Colors.transparent),
+              ),
             ),
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () => Navigator.of(context).pop(folderName),
+
+            // Popup with animated position and opacity
+            Positioned(
+              left: position.dx - 160,
+              top: position.dy - 140,
+              child: Material(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.transparent,
+                child: FadeTransition(
+                  opacity: fadeAnimation,
+                  child: SlideTransition(
+                    position: offsetAnimation,
+                    child: PopupMenuContent(
+                      onClose: () {
+                        controller.reverse().then((_) {
+                          overlayEntry.remove();
+                          controller.dispose();
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         );
       },
     );
+
+    Overlay.of(context).insert(overlayEntry);
+    controller.forward();
   }
 
   Future<String?> _showEditFolderDialog(String currentName) {
@@ -137,7 +175,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: nNotesAppBar(),
       drawer: nNotesDrawer(context),
       body: nNotescontains(),
-      floatingActionButton: nNotesAddButton(context),
+      floatingActionButton: FloatingActionButton(
+        key: _fabKey,
+        tooltip: 'Add',
+        child: const Icon(Icons.add),
+        onPressed: () => _showFabPopup(context, _fabKey),
+      ),
     );
   }
 
@@ -151,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 BoxDecoration(color: Theme.of(context).colorScheme.onPrimary),
             child: const Center(
               child: Text(
-                'MENU',
+                'All Folder',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -159,85 +202,60 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          ListTile(
-            title: const Text('Add Folder'),
-            leading: const Icon(Icons.create_new_folder_sharp),
-            onTap: () async {
-              final newFolderName = await _showAddFolderDialog();
-              if (newFolderName != null && newFolderName.trim().isNotEmpty) {
-                final id = _db.collection('FolderData').doc().id;
-                final newFolder =
-                    FolderData(folderId: id, name: newFolderName.trim());
-                await newFolder.save();
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.note),
-            title: const Text("All Notes (No Folder)"),
-            onTap: () {
-              setState(() {
-                _selectedFolderId = null;
-                Navigator.pop(context);
-              });
-            },
-          ),
-          const Divider(),
-          ..._folders.values.map((folder) {
-            return ListTile(
-              leading: const Icon(Icons.folder),
-              title: Text(folder.name),
-              trailing: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert), // Titik tiga
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    final newName = await _showEditFolderDialog(folder.name);
-                    if (newName != null && newName.trim().isNotEmpty) {
-                      final updatedFolder = FolderData(
-                        folderId: folder.folderId,
-                        name: newName.trim(),
-                      );
-                      await updatedFolder.save(); // replace existing folder
-                    }
-                  } else if (value == 'delete') {
-                    await folder.delete();
-                    _folders.remove(folder.folderId); // penting
-                    setState(() {}); // trigger rebuild
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
-                ],
+          if (_folders.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Text(
+                  'No Folder Added',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
               ),
-              onTap: () {
-                setState(() {
-                  _selectedFolderId = folder
-                      .folderId; //memilih folder yang diinginkan sesuai dengan folder id
-                  Navigator.pop(context); // Close the drawer
-                });
-              },
-            );
-          }).toList(),
+            )
+          else
+            ..._folders.values.map((folder) {
+              return ListTile(
+                leading: const Icon(Icons.folder),
+                title: Text(folder.name),
+                trailing: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      final newName = await _showEditFolderDialog(folder.name);
+                      if (newName != null && newName.trim().isNotEmpty) {
+                        final updatedFolder = FolderData(
+                          folderId: folder.folderId,
+                          name: newName.trim(),
+                        );
+                        await updatedFolder.save();
+                      }
+                    } else if (value == 'delete') {
+                      await folder.delete();
+                      _folders.remove(folder.folderId);
+                      setState(() {});
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedFolderId = folder.folderId;
+                    Navigator.pop(context);
+                  });
+                },
+              );
+            }).toList(),
         ],
       ),
-    );
-  }
-
-  FloatingActionButton nNotesAddButton(BuildContext context) {
-    return FloatingActionButton(
-      tooltip: 'Add Notes',
-      onPressed: () {
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const NoteScreen()));
-      },
-      child: const Icon(Icons.add),
     );
   }
 
