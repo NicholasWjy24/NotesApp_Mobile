@@ -9,7 +9,13 @@ import 'package:nnotes/data/note_data.dart';
 
 class NoteScreen extends StatefulWidget {
   final NoteData? note;
-  const NoteScreen({super.key, this.note});
+  final String? initialFolderId;
+  
+  const NoteScreen({
+    super.key, 
+    this.note,
+    this.initialFolderId,
+  });
 
   @override
   State<NoteScreen> createState() => _NoteScreenState();
@@ -105,6 +111,7 @@ class _NoteScreenState extends State<NoteScreen> {
         plainTextContent: plainText,
         time: DateTime.now(),
         done: false,
+        folderId: widget.note!.folderId ?? widget.initialFolderId,
       );
       note.save();
     });
@@ -188,6 +195,7 @@ class _NoteScreenState extends State<NoteScreen> {
                   plainTextContent: plainText,
                   time: now,
                   done: false,
+                  folderId: widget.note?.folderId ?? widget.initialFolderId,
                 );
 
                 await item.save();

@@ -32,4 +32,19 @@ class FolderData {
     final db = Localstore.instance;
     await db.collection('FolderData').doc(folderId).delete();
   }
+
+  static Future<List<FolderData>> getAllFolders() async {
+    final db = Localstore.instance;
+    final folders = await db.collection('FolderData').get();
+    if (folders == null) return [];
+    
+    return folders.entries
+        .map((entry) => FolderData.fromMap(entry.value))
+        .toList();
+  }
+
+  static Future<List<FolderData>> getFoldersByParent(String? parentId) async {
+    final allFolders = await getAllFolders();
+    return allFolders.where((folder) => folder.parentId == parentId).toList();
+  }
 }

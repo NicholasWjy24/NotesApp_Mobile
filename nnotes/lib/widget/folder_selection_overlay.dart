@@ -60,14 +60,66 @@ class _FolderSelectionOverlayState extends State<FolderSelectionOverlay> {
           if (_filteredFolders.isEmpty)
             const Text('No folders found.')
           else
-            ..._filteredFolders.map((folder) {
-              return ListTile(
-                title: Text(folder.name),
-                onTap: () => widget.onFolderSelected(folder.folderId),
-              );
-            }),
+            Expanded(
+              child: ListView(
+                children: _buildFolderTree(_filteredFolders),
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  List<Widget> _buildFolderTree(List<FolderData> folders) {
+    final List<Widget> widgets = [];
+    
+    // Get root folders (no parentId)
+    final rootFolders = folders.where((folder) => folder.parentId == null).toList();
+    
+    for (final rootFolder in rootFolders) {
+      widgets.add(_buildFolderTile(rootFolder, 0, folders));
+    }
+    
+    return widgets;
+  }
+
+  Widget _buildFolderTile(FolderData folder, int level, List<FolderData> allFolders) {
+    // Get subfolders
+    final subfolders = allFolders
+        .where((f) => f.parentId == folder.folderId)
+        .toList();
+    
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(
+            subfolders.isNotEmpty ? Icons.folder_open : Icons.folder,
+            color: level == 0 ? null : Colors.grey[600],
+            size: level == 0 ? 24 : 20,
+          ),
+          title: Text(
+            folder.name,
+            style: TextStyle(
+              fontWeight: level == 0 ? FontWeight.w500 : FontWeight.normal,
+              fontSize: level == 0 ? 16 : 14,
+            ),
+          ),
+          subtitle: level == 0 ? null : Text(
+            'Subfolder',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+          onTap: () => widget.onFolderSelected(folder.folderId),
+        ),
+        // Show subfolders with indentation
+        if (subfolders.isNotEmpty)
+          ...subfolders.map((subfolder) => Padding(
+            padding: EdgeInsets.only(left: 16.0 * (level + 1)),
+            child: _buildFolderTile(subfolder, level + 1, allFolders),
+          )),
+      ],
     );
   }
 }

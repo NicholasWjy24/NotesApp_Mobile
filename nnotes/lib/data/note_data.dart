@@ -52,4 +52,24 @@ class NoteData {
     final db = Localstore.instance;
     await db.collection('NoteData').doc(id).delete();
   }
+
+  static Future<List<NoteData>> getAllNotes() async {
+    final db = Localstore.instance;
+    final notes = await db.collection('NoteData').get();
+    if (notes == null) return [];
+    
+    return notes.entries
+        .map((entry) => NoteData.fromMap(entry.value))
+        .toList();
+  }
+
+  static Future<List<NoteData>> getNotesByFolder(String? folderId) async {
+    final allNotes = await getAllNotes();
+    return allNotes.where((note) => note.folderId == folderId).toList();
+  }
+
+  static Future<List<NoteData>> getNotesWithoutFolder() async {
+    final allNotes = await getAllNotes();
+    return allNotes.where((note) => note.folderId == null).toList();
+  }
 }

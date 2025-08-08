@@ -5,8 +5,12 @@ import 'package:nnotes/data/folder_data.dart';
 
 class PopupMenuContent extends StatefulWidget {
   final VoidCallback onClose;
+  final String? selectedFolderId;
 
-  const PopupMenuContent({required this.onClose});
+  const PopupMenuContent({
+    required this.onClose,
+    this.selectedFolderId,
+  });
 
   @override
   State<PopupMenuContent> createState() => _PopupMenuContentState();
@@ -119,7 +123,11 @@ class _PopupMenuContentState extends State<PopupMenuContent>
                   widget.onClose();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const NoteScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => NoteScreen(
+                        initialFolderId: widget.selectedFolderId,
+                      ),
+                    ),
                   );
                 },
               ),
