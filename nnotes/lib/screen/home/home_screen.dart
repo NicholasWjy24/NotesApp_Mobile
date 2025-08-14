@@ -129,21 +129,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
-    // Get folders to display
+    // Get folders to display (only direct children of the current folder)
     List<FolderData> foldersToShow;
     if (_selectedFolderId == null) {
       foldersToShow = FolderService.getRootFolders(_folders);
     } else {
-      final subfolders =
+      foldersToShow =
           FolderService.getSubfolders(_folders, _selectedFolderId!);
-      final addableFolders = _folders.values
-          .where((folder) =>
-              folder.folderId != _selectedFolderId &&
-              folder.parentId != _selectedFolderId &&
-              !FolderService.isDescendant(
-                  _selectedFolderId!, folder.folderId, _folders))
-          .toList();
-      foldersToShow = [...subfolders, ...addableFolders];
     }
 
     // Filter notes
@@ -507,6 +499,20 @@ class _HomeScreenState extends State<HomeScreen> {
       curve: Curves.easeIn,
     );
 
+    bool isOverlayClosed = false;
+
+    Future<void> closeOverlay() async {
+      if (isOverlayClosed) return;
+      isOverlayClosed = true;
+      if (controller.status != AnimationStatus.dismissed) {
+        await controller.reverse();
+      }
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+      controller.dispose();
+    }
+
     overlayEntry = OverlayEntry(
       builder: (context) {
         return Stack(
@@ -514,10 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Positioned.fill(
               child: GestureDetector(
                 onTap: () {
-                  controller.reverse().then((_) {
-                    overlayEntry.remove();
-                    controller.dispose();
-                  });
+                  closeOverlay();
                 },
                 child: Container(color: Colors.transparent),
               ),
@@ -535,10 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: PopupMenuContent(
                       selectedFolderId: _selectedFolderId,
                       onClose: () {
-                        controller.reverse().then((_) {
-                          overlayEntry.remove();
-                          controller.dispose();
-                        });
+                        closeOverlay();
                       },
                     ),
                   ),

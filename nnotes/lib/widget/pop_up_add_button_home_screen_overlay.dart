@@ -42,7 +42,11 @@ class _PopupMenuContentState extends State<PopupMenuContent>
     final folderName = await _showAddFolderDialog();
     if (folderName != null && folderName.trim().isNotEmpty) {
       final id = _db.collection('FolderData').doc().id;
-      final newFolder = FolderData(folderId: id, name: folderName.trim());
+      final newFolder = FolderData(
+        folderId: id,
+        name: folderName.trim(),
+        parentId: widget.selectedFolderId,
+      );
       await newFolder.save();
     }
   }
@@ -110,9 +114,13 @@ class _PopupMenuContentState extends State<PopupMenuContent>
                   if (newFolderName != null &&
                       newFolderName.trim().isNotEmpty) {
                     final id = _db.collection('FolderData').doc().id;
-                    final newFolder =
-                        FolderData(folderId: id, name: newFolderName.trim());
+                    final newFolder = FolderData(
+                      folderId: id,
+                      name: newFolderName.trim(),
+                      parentId: widget.selectedFolderId,
+                    );
                     await newFolder.save();
+                    widget.onClose();
                   }
                 },
               ),
