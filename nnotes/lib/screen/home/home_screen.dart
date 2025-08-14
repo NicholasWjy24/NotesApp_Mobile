@@ -92,9 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedFolderId != null && _folders.containsKey(_selectedFolderId)) {
       title = FolderService.getFolderPath(_selectedFolderId!, _folders);
     }
-    
+
     return AppBar(
-      title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      title: Text(title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
       actions: [
         if (_selectedFolderId != null)
           IconButton(
@@ -117,7 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
       folders: _folders,
       notes: _notes,
       selectedFolderId: _selectedFolderId,
-      onFolderSelected: (folderId) => setState(() => _selectedFolderId = folderId),
+      onFolderSelected: (folderId) =>
+          setState(() => _selectedFolderId = folderId),
       onEditFolder: _editFolder,
       onMoveToRoot: _moveFolderToRoot,
       onMoveToFolder: _moveFolderToFolder,
@@ -132,12 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedFolderId == null) {
       foldersToShow = FolderService.getRootFolders(_folders);
     } else {
-      final subfolders = FolderService.getSubfolders(_folders, _selectedFolderId!);
+      final subfolders =
+          FolderService.getSubfolders(_folders, _selectedFolderId!);
       final addableFolders = _folders.values
-          .where((folder) => 
-              folder.folderId != _selectedFolderId && 
+          .where((folder) =>
+              folder.folderId != _selectedFolderId &&
               folder.parentId != _selectedFolderId &&
-              !FolderService.isDescendant(_selectedFolderId!, folder.folderId, _folders))
+              !FolderService.isDescendant(
+                  _selectedFolderId!, folder.folderId, _folders))
           .toList();
       foldersToShow = [...subfolders, ...addableFolders];
     }
@@ -155,12 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Combine folders and notes
     final allItems = <Widget>[];
-    
+
     // Add folder cards first
     for (final folder in foldersToShow) {
       allItems.add(_buildFolderCard(folder));
     }
-    
+
     // Add note cards
     for (final note in filteredNotes) {
       allItems.add(_buildNoteCard(note));
@@ -211,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final folderName = _folders[_selectedFolderId]?.name ?? 'this folder';
       message = 'No notes in $folderName yet. Click + to add one!';
     }
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -225,10 +229,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             message,
             style: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.bold, 
-              color: Theme.of(context).colorScheme.onPrimary
-            ),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onPrimary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -312,11 +315,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _moveFolderToFolder(FolderData folderToMove) async {
     final availableFolders = _folders.values
         .where((folder) => folder.folderId != folderToMove.folderId)
-        .where((folder) => !FolderService.isDescendant(folder.folderId, folderToMove.folderId, _folders))
+        .where((folder) => !FolderService.isDescendant(
+            folder.folderId, folderToMove.folderId, _folders))
         .toList();
 
     if (availableFolders.isEmpty) {
-      _showMessage('No Available Folders', 'No other folders available to move this folder into.');
+      _showMessage('No Available Folders',
+          'No other folders available to move this folder into.');
       return;
     }
 
@@ -352,19 +357,19 @@ class _HomeScreenState extends State<HomeScreen> {
       'Are you sure you want to delete "${folder.name}"? This will remove all notes from this folder and its subfolders.',
     );
 
-         if (shouldDelete == true) {
-       final foldersToDelete = <String>{folderId};
-       final subfolders = _folders.values
-           .where((folder) => folder.parentId == folderId)
-           .map((folder) => folder.folderId);
-       
-       for (final subfolderId in subfolders) {
-         foldersToDelete.addAll(_getAllSubfolderIds(subfolderId));
-       }
-       
-       await NoteService.removeNotesFromFolder(foldersToDelete, _notes);
-       await FolderService.deleteFolderAndSubfolders(folderId, _folders);
-     }
+    if (shouldDelete == true) {
+      final foldersToDelete = <String>{folderId};
+      final subfolders = _folders.values
+          .where((folder) => folder.parentId == folderId)
+          .map((folder) => folder.folderId);
+
+      for (final subfolderId in subfolders) {
+        foldersToDelete.addAll(_getAllSubfolderIds(subfolderId));
+      }
+
+      await NoteService.removeNotesFromFolder(foldersToDelete, _notes);
+      await FolderService.deleteFolderAndSubfolders(folderId, _folders);
+    }
   }
 
   Future<void> _addFolderToCurrentFolder(String folderId) async {
@@ -372,7 +377,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (folder == null || _selectedFolderId == null) return;
 
     if (FolderService.isDescendant(_selectedFolderId!, folderId, _folders)) {
-      _showSnackBar('Cannot add folder: would create circular reference', isError: true);
+      _showSnackBar('Cannot add folder: would create circular reference',
+          isError: true);
       return;
     }
 
@@ -464,9 +470,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // UI Helpers
   void _showFabPopup(BuildContext context, GlobalKey fabKey) {
-    final RenderBox button = fabKey.currentContext!.findRenderObject() as RenderBox;
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final RenderBox button =
+        fabKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset position =
+        button.localToGlobal(Offset.zero, ancestor: overlay);
 
     late OverlayEntry overlayEntry;
     final AnimationController controller = AnimationController(
@@ -579,7 +588,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<String?> _showFolderSelectionDialog(String title, List<FolderData> availableFolders) async {
+  Future<String?> _showFolderSelectionDialog(
+      String title, List<FolderData> availableFolders) async {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -602,7 +612,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const Divider(),
                     ...availableFolders.map((folder) {
-                      final folderPath = FolderService.getFolderPath(folder.folderId, _folders);
+                      final folderPath = FolderService.getFolderPath(
+                          folder.folderId, _folders);
                       return ListTile(
                         leading: const Icon(Icons.folder),
                         title: Text(folder.name),
@@ -642,25 +653,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-     void _showSnackBar(String message, {bool isError = false}) {
-     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(
-         content: Text(message),
-         backgroundColor: isError ? Colors.red : Colors.green,
-       ),
-     );
-   }
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
 
-   Set<String> _getAllSubfolderIds(String folderId) {
-     final Set<String> ids = {folderId};
-     final subfolders = _folders.values
-         .where((folder) => folder.parentId == folderId)
-         .map((folder) => folder.folderId);
-     
-     for (final subfolderId in subfolders) {
-       ids.addAll(_getAllSubfolderIds(subfolderId));
-     }
-     
-     return ids;
-   }
- }
+  Set<String> _getAllSubfolderIds(String folderId) {
+    final Set<String> ids = {folderId};
+    final subfolders = _folders.values
+        .where((folder) => folder.parentId == folderId)
+        .map((folder) => folder.folderId);
+
+    for (final subfolderId in subfolders) {
+      ids.addAll(_getAllSubfolderIds(subfolderId));
+    }
+
+    return ids;
+  }
+}
