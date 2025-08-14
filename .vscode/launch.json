@@ -12,19 +12,5 @@
             "request": "launch",
             "type": "dart"
         },
-        {
-            "name": "nnotes (profile mode)",
-            "cwd": "nnotes",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "nnotes (release mode)",
-            "cwd": "nnotes",
-            "request": "launch",
-            "type": "dart",
-            "flutterMode": "release"
-        }
     ]
 }

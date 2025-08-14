@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Listen to folder changes
     _db.collection('FolderData').stream.listen((event) {
-      if (event == null || event['folderId'] == null) return;
+      if (event['folderId'] == null) return;
 
       final id = event['folderId'] as String;
       setState(() {
@@ -369,6 +369,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await NoteService.removeNotesFromFolder(foldersToDelete, _notes);
       await FolderService.deleteFolderAndSubfolders(folderId, _folders);
+
+      // Immediately reflect deletion in UI
+      setState(() {
+        for (final id in foldersToDelete) {
+          _folders.remove(id);
+        }
+        if (_selectedFolderId != null &&
+            foldersToDelete.contains(_selectedFolderId)) {
+          _selectedFolderId = null;
+        }
+      });
     }
   }
 
