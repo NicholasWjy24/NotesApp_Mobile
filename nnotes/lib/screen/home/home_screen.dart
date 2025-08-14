@@ -359,7 +359,9 @@ class _HomeScreenState extends State<HomeScreen> {
         foldersToDelete.addAll(_getAllSubfolderIds(subfolderId));
       }
 
-      await NoteService.removeNotesFromFolder(foldersToDelete, _notes);
+      // Delete notes in the entire subtree first
+      await NoteService.deleteNotesInFolders(foldersToDelete, _notes);
+      // Then delete folders
       await FolderService.deleteFolderAndSubfolders(folderId, _folders);
 
       // Immediately reflect deletion in UI
@@ -367,6 +369,8 @@ class _HomeScreenState extends State<HomeScreen> {
         for (final id in foldersToDelete) {
           _folders.remove(id);
         }
+        // Also remove deleted notes from local state
+        _notes.removeWhere((_, note) => foldersToDelete.contains(note.folderId));
         if (_selectedFolderId != null &&
             foldersToDelete.contains(_selectedFolderId)) {
           _selectedFolderId = null;

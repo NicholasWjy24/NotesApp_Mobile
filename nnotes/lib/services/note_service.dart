@@ -89,4 +89,16 @@ class NoteService {
       }
     }
   }
+
+  // Delete notes that belong to any of the provided folder IDs
+  static Future<void> deleteNotesInFolders(
+    Set<String> folderIds,
+    Map<String, NoteData> notes,
+  ) async {
+    for (final note in notes.values) {
+      if (folderIds.contains(note.folderId)) {
+        await note.delete();
+      }
+    }
+  }
 }
